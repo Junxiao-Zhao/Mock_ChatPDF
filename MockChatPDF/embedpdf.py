@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import pdfplumber
 import os
 import re
@@ -28,12 +27,16 @@ class EmbedPDF:
         :return: a DataFrame contains Page No. and Contents
         """
 
+        print("Reading pdf...")
         with pdfplumber.open(self.file_path, **kwargs) as pdf:
             self.pages = pdf.pages
 
             for i, page in enumerate(self.pages):
+                print(f"Reading Page {i+1}...")
                 txt = re.sub(r'\s', ' ', page.extract_text())
                 self.contents.append([i, txt])
+
+        print("Finish reading!\n")
 
         self.contents[0][1] = self.file_name.split(
             ".")[0] + " " + self.contents[0][1]  # add file name to Page 0
@@ -93,6 +96,8 @@ class EmbedPDF:
         :return: a DataFrame contains text: str within the max_token and embeddings: np.ndarray
         """
 
+        print("Generating embeddings...")
+
         df["num_tokens"] = df["Contents"].apply(
             lambda x: len(self.tokenizer.encode(x)))
 
@@ -114,8 +119,13 @@ class EmbedPDF:
                 to_token.append(row[1]["Contents"])
 
         embed_df = pd.DataFrame(to_token, columns=["text"])
-        embed_df["embeddings"] = embed_df["text"].apply(lambda x: np.array(
-            openai.Embedding.create(input=x, engine='text-embedding-ada-002')[
-                'data'][0]['embedding']))
+        embed_df["embeddings"] = embed_df["text"].apply(
+            lambda x: openai.Embedding.create(input=x,
+                                              engine='text-embedding-ada-002')[
+                                                  'data'][0]['embedding'])
+        embed_df["num_tokens"] = embed_df["text"].apply(
+            lambda x: len(self.tokenizer.encode(x)))
+
+        print("Finish generating!\n")
 
         return embed_df
