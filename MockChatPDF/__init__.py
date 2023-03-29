@@ -1,3 +1,5 @@
+"""Author: Junxiao Zhao"""
+
 from . import embedpdf
 from . import chatpdf
 

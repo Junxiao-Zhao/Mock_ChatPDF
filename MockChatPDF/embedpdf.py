@@ -4,6 +4,7 @@ import os
 import re
 import tiktoken
 import openai
+import time
 
 
 class EmbedPDF:
@@ -92,7 +93,7 @@ class EmbedPDF:
 
         :param df: a DataFrame contains Page No. and Contents
         :param max_token: the maximum number of token of a model for embedding
-        :param period_type: used to split text into sentences
+        :param period_type: "." for English text and "。" for Chinese text
         :return: a DataFrame contains text: str within the max_token and embeddings: np.ndarray
         """
 
@@ -119,12 +120,27 @@ class EmbedPDF:
                 to_token.append(row[1]["Contents"])
 
         embed_df = pd.DataFrame(to_token, columns=["text"])
-        embed_df["embeddings"] = embed_df["text"].apply(
-            lambda x: openai.Embedding.create(input=x,
-                                              engine='text-embedding-ada-002')[
-                                                  'data'][0]['embedding'])
-        embed_df["num_tokens"] = embed_df["text"].apply(
-            lambda x: len(self.tokenizer.encode(x)))
+
+        num_rows = len(embed_df)
+        embed_df.insert(1, "embeddings", None)
+        embed_df.insert(2, "num_tokens", None)
+
+        # generate embeddings
+        for i in range(0, num_rows, 60):
+            print(
+                f"Generating embeddings from rows {i+1} to {min(i+60, num_rows)}..."
+            )
+            embed_df["embeddings"][i:i + 60] = embed_df["text"][
+                i:i + 60].apply(lambda x: openai.Embedding.create(
+                    input=x, engine='text-embedding-ada-002')['data'][0][
+                        'embedding'])
+            embed_df["num_tokens"][i:i +
+                                   60] = embed_df["text"][i:i + 60].apply(
+                                       lambda x: len(self.tokenizer.encode(x)))
+
+            # the limit of openai.Embedding.create is 60/min
+            if i + 60 < num_rows:
+                time.sleep(60)
 
         print("Finish generating!\n")
 
