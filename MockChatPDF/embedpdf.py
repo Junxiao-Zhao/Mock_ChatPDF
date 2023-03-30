@@ -16,9 +16,9 @@ class EmbedPDF:
         """
 
         self.file_path = file_path
-        self.file_name = os.path.basename(self.file_path)
+        self.file_name = os.path.basename(self.file_path).split(".")[0]
         self.contents = list()
-        self.df = None
+        self.embed_df = None
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
     def pdf_to_df(self, **kwargs) -> pd.DataFrame:
@@ -40,8 +40,8 @@ class EmbedPDF:
 
         print("Finish reading!\n")
 
-        self.contents[0][1] = (self.file_name.split(".")[0] + " " +
-                               self.contents[0][1])  # add file name to Page 0
+        self.contents[0][1] = (self.file_name + " " + self.contents[0][1]
+                               )  # add file name to Page 0
 
         return pd.DataFrame(self.contents, columns=("Page No.", "Contents"))
 
@@ -156,6 +156,8 @@ class EmbedPDF:
             # the limit of openai.Embedding.create is 60/min
             if i + 60 < num_rows:
                 time.sleep(60)
+
+        self.embed_df = embed_df
 
         print("Finish generating!\n")
 
