@@ -1,6 +1,6 @@
-import pandas as pd
-import numpy as np
 import openai
+import numpy as np
+import pandas as pd
 from openai.embeddings_utils import distances_from_embeddings
 
 
